@@ -1,16 +1,15 @@
 <p align="center">
-  <img src="./.github/hippocalc-icon.svg" alt="Finanzfluss Hippocalc Repository" width="180" height="180">
+  <img src="./.github/hippocalc-icon.svg" alt="Finanzfluss Hippocalc Repository" width="150" height="150">
 </p>
 
-<h3 align="center">Hippocalc</h3>
-
+<h1 align="center">
+@finanzfluss/hippocalc
+</h1>
 <p align="center">
-  A collection of financial calculators for the Finanzfluss.de calculators.
-</p>
+Financial calculators for the Finanzfluss API.
+<p>
 
 <br>
-
-# @finanzfluss/hippocalc
 
 A collection of financial calculators powering the [Finanzfluss.de calculators](https://www.finanzfluss.de/rechner/), including comprehensive salary calculations and insurance comparison tools. All exported functions are used for our `api.finanzfluss.de` API.
 
