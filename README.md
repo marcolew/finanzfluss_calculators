@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./.github/hippocalc-icon.svg" alt="Finanzfluss Hippocalc Repository" width="150" height="150">
+  <img src="./.github/hippocalc-icon.svg" alt="Finanzfluss Hippocalc Repository" width="120" height="120">
 </p>
 
 <h1 align="center">
