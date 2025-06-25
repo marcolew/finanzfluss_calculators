@@ -44,8 +44,7 @@ export class NumberValidator<T> {
 
 export class NotNumberValidator<T> extends NumberValidator<T> {
   zero() {
-    if (this.value !== 0)
-      return
+    if (this.value !== 0) return
 
     throw new Error('Value must not be zero')
   }

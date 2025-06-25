@@ -1,5 +1,8 @@
 import { z } from 'zod'
-import { CARE_INSURANCE_CONTRIBUTION_RATES, CARE_INSURANCE_CONTRIBUTION_RATES_SAXONY } from '../constants/gross-to-net'
+import {
+  CARE_INSURANCE_CONTRIBUTION_RATES,
+  CARE_INSURANCE_CONTRIBUTION_RATES_SAXONY,
+} from '../constants/gross-to-net'
 import { PENSION_VALUES } from '../constants/pension'
 import {
   formatPercent,
@@ -82,16 +85,16 @@ export function calcGrossToNet({
     2025: ZAHL66150,
   }
 
-  const GROSS_WAGE
-    = inputPeriod === 1
+  const GROSS_WAGE =
+    inputPeriod === 1
       ? new BigDecimal(inputGrossWage)
       : new BigDecimal(inputGrossWage).multiply(ZAHL12)
 
   const STATE_IS_OST = isNewFederalState(inputState)
 
-  const SOCIAL_INSURANCE_THRESHOLD_KEY
-    = Object.keys(SOCIAL_THRESHOLDS).find(
-      key => key === inputAccountingYear.toString(),
+  const SOCIAL_INSURANCE_THRESHOLD_KEY =
+    Object.keys(SOCIAL_THRESHOLDS).find(
+      (key) => key === inputAccountingYear.toString(),
     ) ?? Object.keys(SOCIAL_THRESHOLDS).at(-1)!
 
   // Krankenversicherung
@@ -101,21 +104,19 @@ export function calcGrossToNet({
 
   if (inputHealthInsurance === 0) {
     inputContributionRate = new BigDecimal(14.6)
-  }
-  else if (inputHealthInsurance === -1) {
+  } else if (inputHealthInsurance === -1) {
     inputContributionRate = new BigDecimal(14)
     inputAdditionalContribution = 0
     inputHealthInsurance = 0
-  }
-  else if (inputHealthInsurance === 1) {
+  } else if (inputHealthInsurance === 1) {
     inputAdditionalContribution = 0
   }
 
   const HI_TOTAL_PERCENTAGE = inputContributionRate.add(
     new BigDecimal(inputAdditionalContribution),
   )
-  const HI_GROSS_WAGE_THRESHOLD
-    = GROSS_WAGE.comparedTo(HI_INCOME_THRESHOLD!) === 1
+  const HI_GROSS_WAGE_THRESHOLD =
+    GROSS_WAGE.comparedTo(HI_INCOME_THRESHOLD!) === 1
       ? HI_INCOME_THRESHOLD
       : GROSS_WAGE
   const HI_ADDITIONAL_CONTRIBUTION_PROPOTION = new BigDecimal(
@@ -126,8 +127,8 @@ export function calcGrossToNet({
     50,
     BigDecimal.ROUND_HALF_DOWN,
   )
-  const HI_CONTRIBUTION_AMOUNT_PROPOTION
-    = HI_ADDITIONAL_CONTRIBUTION_PROPOTION.add(HI_CONTRIBUTION_PROPOTION)
+  const HI_CONTRIBUTION_AMOUNT_PROPOTION =
+    HI_ADDITIONAL_CONTRIBUTION_PROPOTION.add(HI_CONTRIBUTION_PROPOTION)
       .divide(ZAHL100, 50, BigDecimal.ROUND_HALF_DOWN)
       .multiply(HI_GROSS_WAGE_THRESHOLD!)
 
@@ -138,16 +139,15 @@ export function calcGrossToNet({
   if (inputHealthInsurance === 0) {
     // Gesetzliche Krankenversicherung
     healthInsurance = HI_CONTRIBUTION_AMOUNT_PROPOTION
-  }
-  else if (inputHealthInsurance === 1) {
+  } else if (inputHealthInsurance === 1) {
     // Private Krankenversicherung
     inputAdditionalContribution = 0
 
     noCareInsurance = true
     healthInsurance = new BigDecimal(inputPkvContribution).multiply(ZAHL12)
     if (inputEmployerSubsidy === 1) {
-      let maxEmployerGrant
-        = inputAccountingYear === 2019
+      let maxEmployerGrant =
+        inputAccountingYear === 2019
           ? new BigDecimal(351.66)
           : new BigDecimal(367.97)
       maxEmployerGrant = maxEmployerGrant.multiply(ZAHL12)
@@ -162,8 +162,7 @@ export function calcGrossToNet({
         healthInsurance = healthInsurance.add(
           healthInsurance.subtract(maxEmployerGrant),
         )
-      }
-      else {
+      } else {
         privateHealthInsurance = healthInsurance
       }
     }
@@ -175,12 +174,12 @@ export function calcGrossToNet({
 
   // Pflegeversicherung
   const CI_INCOME_THRESHOLD = SOCIAL_THRESHOLDS[SOCIAL_INSURANCE_THRESHOLD_KEY]
-  const CI_GROSS_WAGE_THRESHOLD
-    = GROSS_WAGE.comparedTo(CI_INCOME_THRESHOLD!) === 1
+  const CI_GROSS_WAGE_THRESHOLD =
+    GROSS_WAGE.comparedTo(CI_INCOME_THRESHOLD!) === 1
       ? CI_INCOME_THRESHOLD
       : GROSS_WAGE
-  const LOCAL_CI_CONTRIBUTION_RATES
-    = inputState === 'Sachsen'
+  const LOCAL_CI_CONTRIBUTION_RATES =
+    inputState === 'Sachsen'
       ? CARE_INSURANCE_CONTRIBUTION_RATES_SAXONY
       : CARE_INSURANCE_CONTRIBUTION_RATES
 
@@ -191,8 +190,8 @@ export function calcGrossToNet({
   )
   let ciContribution = new BigDecimal(CI_CONTRIBUTION_RATE!.AN)
 
-  const hasExtraCiContribution
-    = inputAccountingYear - inputYearOfBirth > 23 && inputChildren === 0
+  const hasExtraCiContribution =
+    inputAccountingYear - inputYearOfBirth > 23 && inputChildren === 0
 
   // Zuschlag für Kinderlose
   if (hasExtraCiContribution) {
@@ -218,19 +217,17 @@ export function calcGrossToNet({
     // gesetzliche Rentenversicherung
     if (STATE_IS_OST) {
       piIncomeThreshold = BigDecimal.valueOf(PENSION_LIMIT_EAST)
-    }
-    else {
+    } else {
       piIncomeThreshold = BigDecimal.valueOf(PENSION_LIMIT_WEST)
     }
-  }
-  else if (inputPensionInsurance === 1) {
+  } else if (inputPensionInsurance === 1) {
     // private Rentenversicherung
     piIncomeThreshold = ZERO
   }
 
   const PI_PERCENTAGE = new BigDecimal(18.6)
-  const PI_GROSS_WAGE_THRESHOLD
-    = GROSS_WAGE.comparedTo(piIncomeThreshold) === 1
+  const PI_GROSS_WAGE_THRESHOLD =
+    GROSS_WAGE.comparedTo(piIncomeThreshold) === 1
       ? piIncomeThreshold
       : GROSS_WAGE
   const PI_CONTRIBUTION_PROPOTION = PI_PERCENTAGE.divide(
@@ -248,14 +245,13 @@ export function calcGrossToNet({
   let uiIncomeThreshold: BigDecimal
   if (STATE_IS_OST) {
     uiIncomeThreshold = BigDecimal.valueOf(PENSION_LIMIT_EAST)
-  }
-  else {
+  } else {
     uiIncomeThreshold = BigDecimal.valueOf(PENSION_LIMIT_WEST)
   }
 
   const UI_PERCENTAGE = new BigDecimal(2.6)
-  const UI_GROSS_WAGE_THRESHOLD
-    = GROSS_WAGE.comparedTo(piIncomeThreshold) === 1
+  const UI_GROSS_WAGE_THRESHOLD =
+    GROSS_WAGE.comparedTo(piIncomeThreshold) === 1
       ? uiIncomeThreshold
       : GROSS_WAGE
   const UI_CONTRIBUTION_PROPOTION = UI_PERCENTAGE.divide(
@@ -275,8 +271,8 @@ export function calcGrossToNet({
 
   // Lohnsteuer
   // Use typed class for selected accounting year
-  const WageTaxClass
-    = INCOME_TAX_CLASSES[inputAccountingYear as keyof typeof INCOME_TAX_CLASSES]
+  const WageTaxClass =
+    INCOME_TAX_CLASSES[inputAccountingYear as keyof typeof INCOME_TAX_CLASSES]
 
   const lst = new WageTaxClass()
   let grossWage = new BigDecimal(inputGrossWage)
@@ -289,8 +285,7 @@ export function calcGrossToNet({
       50,
       BigDecimal.ROUND_HALF_DOWN,
     )
-  }
-  else if (inputPeriod === 0) {
+  } else if (inputPeriod === 0) {
     inputPeriod = 2
   }
 
@@ -298,8 +293,7 @@ export function calcGrossToNet({
   lst.setAlter1(0) // 1, wenn das 64. Lebensjahr zu Beginn des Kalenderjahres vollendet wurde
   if (inputTaxAllowance === 0) {
     lst.setF(1) // Faktor
-  }
-  else {
+  } else {
     lst.setLzzfreib(
       new BigDecimal(inputTaxAllowance)
         .divide(ZAHL12, 50, BigDecimal.ROUND_HALF_DOWN)
@@ -317,8 +311,7 @@ export function calcGrossToNet({
   lst.setStkl(inputTaxClass) // Steuerklasse
   if (hasExtraCiContribution) {
     lst.setPvz(1) // AN zahlt den Zuschuss zur Sozialen Pflegeversicherung
-  }
-  else {
+  } else {
     lst.setPvz(0) // AN zahlt keinen Zuschuss zur Sozialen Pflegeversicherung
   }
   if (inputChildTaxAllowance > 0) {
@@ -392,8 +385,8 @@ export function calcGrossToNet({
   let employeeCareInsurancePercentage = ciContribution.toNumber()
 
   if (noCareInsurance) {
-    employerCareInsurancePercentage = employeeCareInsurancePercentage
-      = CI_CONTRIBUTION_TOTAL.toNumber() / 2
+    employerCareInsurancePercentage = employeeCareInsurancePercentage =
+      CI_CONTRIBUTION_TOTAL.toNumber() / 2
   }
 
   let employerCareInsuranceMonth = careInsurance.divide(
@@ -422,12 +415,12 @@ export function calcGrossToNet({
   let employerHealthInsuranceYear = healthInsurance
   if (inputHealthInsurance === 1) {
     // Gesetzliche KV
-    employerHealthInsuranceMonth
-      = inputEmployerSubsidy === 1
+    employerHealthInsuranceMonth =
+      inputEmployerSubsidy === 1
         ? privateHealthInsurance.divide(ZAHL12, 50, BigDecimal.ROUND_HALF_DOWN)
         : ZERO
-    employerHealthInsuranceYear
-      = inputEmployerSubsidy === 1 ? privateHealthInsurance : ZERO
+    employerHealthInsuranceYear =
+      inputEmployerSubsidy === 1 ? privateHealthInsurance : ZERO
   }
 
   const employerTotalInsurances = employerHealthInsuranceMonth

@@ -14,9 +14,9 @@ export const NET_POLICY_QUERY_SCHEMA = z.object({
     .positive()
     .int()
     .max(100)
-    .transform(years => years * 12),
+    .transform((years) => years * 12),
   taxAllowance: z.coerce.number().nonnegative().max(MAX_EURO),
-  useGrossToNet: z.string().transform(i => i === 'true'),
+  useGrossToNet: z.string().transform((i) => i === 'true'),
   additionalIncome: z.coerce.number().nonnegative().max(MAX_EURO),
   personalTaxRate: z.coerce
     .number()
@@ -83,13 +83,13 @@ export const NET_POLICY_QUERY_SCHEMA = z.object({
     .max(100)
     .optional()
     .default(0)
-    .transform(years => years * 12),
+    .transform((years) => years * 12),
   partialExemption: z.coerce
     .number()
     .nonnegative()
     .max(MAX_PERCENT)
     .transform(toPercentRate)
-    .transform(rate => 1 - rate),
+    .transform((rate) => 1 - rate),
   reallocationRate: z.coerce
     .number()
     .nonnegative()
@@ -136,9 +136,9 @@ function simulateOverPeriod(parsedQuery: NetPolicyQuery) {
     let tax = 0
     if (reallocationOccurrence > 0 && month % reallocationOccurrence === 0) {
       const realizedGain = etfGain * reallocationRate
-      tax
-        = Math.max(0, realizedGain * partialExemption - taxAllowance)
-          * capitalGainsTax
+      tax =
+        Math.max(0, realizedGain * partialExemption - taxAllowance) *
+        capitalGainsTax
       etfGain -= realizedGain
     }
 
@@ -147,18 +147,17 @@ function simulateOverPeriod(parsedQuery: NetPolicyQuery) {
     const etfInterest = etfBalance * expectedInterest
     etfGain += etfInterest - etfCost
     etfBalance += savingRate - tax + etfInterest - etfCost
-    if (month === 1)
-      etfBalance += placementCommission
+    if (month === 1) etfBalance += placementCommission
 
     // for policy
     const policyInterest = policyBalance * expectedInterest
-    const policyCostAdministration
-      = policyBalance * ter
-        + Math.max(policyBalance * balanceCosts, minimumCosts)
-        + fixedCosts
+    const policyCostAdministration =
+      policyBalance * ter +
+      Math.max(policyBalance * balanceCosts, minimumCosts) +
+      fixedCosts
     const policyCostSaving = savingRate * savingRateCosts
-    policyBalance
-      += savingRate + policyInterest - policyCostAdministration - policyCostSaving
+    policyBalance +=
+      savingRate + policyInterest - policyCostAdministration - policyCostSaving
   }
 
   return { policyBalance, etfBalance, etfGain }
@@ -236,10 +235,10 @@ function calcPolicyTax(policyGross: number, additionalIncome: number) {
     inputLevyTwo: 0,
     inputActivateLevy: 0,
   }
-  const correction
-    = CORRECTION_VALUES.werbungskostenpauschale
-      + CORRECTION_VALUES.arbeitslosenversicherung
-      * Math.min(policyGross, CORRECTION_VALUES.beitragsbemessungsgrenze)
+  const correction =
+    CORRECTION_VALUES.werbungskostenpauschale +
+    CORRECTION_VALUES.arbeitslosenversicherung *
+      Math.min(policyGross, CORRECTION_VALUES.beitragsbemessungsgrenze)
   const taxesWithPolicy = calcGrossToNet({
     ...sharedQuery,
     inputGrossWage: policyGross + correction + additionalIncome,

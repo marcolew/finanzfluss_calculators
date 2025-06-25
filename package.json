@@ -39,6 +39,8 @@
     "build": "tsdown",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "format": "prettier \"**/*.{css,html,json,js,md,ts,yml}\" --write",
+    "format:check": "prettier \"**/*.{css,html,json,js,md,ts,yml}\" --check",
     "test": "vitest",
     "test:types": "tsc --noEmit",
     "release": "bumpp"
@@ -52,6 +54,7 @@
     "@types/node": "^22.15.33",
     "bumpp": "^10.2.0",
     "eslint": "^9.29.0",
+    "prettier": "^3.6.1",
     "tsdown": "^0.12.9",
     "typescript": "^5.8.3",
     "ufo": "^1.6.1",

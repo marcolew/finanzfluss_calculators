@@ -10,8 +10,8 @@ export function formatResultWithTwoOptionalDecimals(
   amount: number,
   suffix = '€',
 ) {
-  const decimalsRequired
-    = Math.abs(amount) - Number.parseInt(amount.toString()) > 0
+  const decimalsRequired =
+    Math.abs(amount) - Number.parseInt(amount.toString()) > 0
   const decimalCount = decimalsRequired ? 2 : 0
   const formattedAmount = formatNumber(amount, decimalCount)
   return `${formattedAmount}${suffix}`
@@ -53,7 +53,7 @@ function formatExponential(amount: number) {
   const parsedExponent = amountString.slice(amountString.indexOf('+') + 1)
   const formattedExponent = parsedExponent
     .split('')
-    .map(i => SUPERSCRIPTS[+i])
+    .map((i) => SUPERSCRIPTS[+i])
     .join('')
 
   return `${formattedMantissa}×10${formattedExponent}`

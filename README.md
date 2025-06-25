@@ -83,7 +83,7 @@ const input = {
   inputHealthInsurance: '0',
   inputAdditionalContribution: '1.7',
   inputGrossWage: '5000',
-  inputPeriod: '2' // 2 = monthly, 1 = yearly
+  inputPeriod: '2', // 2 = monthly, 1 = yearly
 }
 
 // Validate input
@@ -129,7 +129,7 @@ const input = {
   expectedInterest: '7',
   reallocationOccurrence: '0',
   partialExemption: '30',
-  reallocationRate: '0'
+  reallocationRate: '0',
 }
 
 // Validate input
