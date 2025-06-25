@@ -50,22 +50,23 @@ describe('calculators/net-policy', () => {
 
     const data = calcNetPolicy(parsedQuery)
 
-    expect(data.tableData.grossWorth.policy).toBe('374.366')
-    expect(data.tableData.netWorth.policy).toBe('334.298')
+    expect(data.tableData.grossWorth.policy).toMatchInlineSnapshot('"374.366"')
+    expect(data.tableData.netWorth.policy).toMatchInlineSnapshot(`"335.163"`)
   })
 
-  it('should work with useGrossToNet', () => {
+  it('should use different calculation for durations under 12 years', () => {
     const parsedQuery = NET_POLICY_QUERY_SCHEMA.parse(
       stringifyValues({
         ...SHARED_QUERY,
-        duration: 35,
-        useGrossToNet: true,
+        duration: 10,
       }),
     )
 
     const data = calcNetPolicy(parsedQuery)
 
-    expect(data.tableData.tax.policy).toMatch(/^39/)
-    expect(data.tableData.netWorth.policy).toMatch(/^33/)
+    expect(data.tableData.gain.policy).toMatchInlineSnapshot(`"10.114"`)
+    expect(data.tableData.gross.policy).toMatchInlineSnapshot(`"8.597"`)
+    expect(data.tableData.tax.policy).toMatchInlineSnapshot(`"2.004"`)
+    expect(data.tableData.netWorth.policy).toMatchInlineSnapshot(`"38.111"`)
   })
 })

@@ -16,11 +16,11 @@ exports[`calculators/net-policy > should have correct table data 1`] = `
   },
   "netWorth": {
     "etf": "348.041",
-    "policy": "335.635",
+    "policy": "336.439",
   },
   "tax": {
     "etf": "37.360",
-    "policy": "40.302",
+    "policy": "39.498",
   },
   "totalPayments": {
     "etf": "105.299",
