@@ -62,7 +62,10 @@ The Brutto-Netto-Rechner calculates your net salary from gross income, accountin
 - **Comprehensive social insurance** including pension, unemployment, and care insurance calculations
 
 ```ts
-import { calcGrossToNet, GROSS_NET_QUERY_SCHEMA } from '@finanzfluss/calculators'
+import {
+  calcGrossToNet,
+  GROSS_NET_QUERY_SCHEMA,
+} from '@finanzfluss/calculators'
 
 const input = {
   inputAccountingYear: '2025',
@@ -109,7 +112,10 @@ The Rentenversicherung-Rechner compares ETF-based pension insurance policies (Ne
 - **Real-world cost modeling** using actual insurance product data and fee structures
 
 ```ts
-import { calcNetPolicy, NET_POLICY_QUERY_SCHEMA } from '@finanzfluss/calculators'
+import {
+  calcNetPolicy,
+  NET_POLICY_QUERY_SCHEMA,
+} from '@finanzfluss/calculators'
 
 const input = {
   savingRate: '500',
