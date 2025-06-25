@@ -1,0 +1,60 @@
+{
+  "name": "@finanzfluss/hippocalc",
+  "type": "module",
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.12.3",
+  "description": "Financial calculators for the Finanzfluss API",
+  "author": "Finflow GmbH",
+  "license": "AGPL-3.0",
+  "homepage": "https://github.com/finanzfluss/hippocalc#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/finanzfluss/hippocalc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/finanzfluss/hippocalc/issues"
+  },
+  "keywords": [
+    "api",
+    "calculator",
+    "finanzfluss",
+    "finflow"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "default": "./dist/utils/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest",
+    "test:types": "tsc --noEmit",
+    "release": "bumpp"
+  },
+  "peerDependencies": {
+    "bignumber.js": "^9.3.0",
+    "zod": "^3.25.64"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^4.16.1",
+    "@types/node": "^22.15.33",
+    "bumpp": "^10.2.0",
+    "eslint": "^9.29.0",
+    "tsdown": "^0.12.9",
+    "typescript": "^5.8.3",
+    "ufo": "^1.6.1",
+    "vitest": "^3.2.4"
+  }
+}

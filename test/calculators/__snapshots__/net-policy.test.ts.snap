@@ -1,0 +1,30 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`calculators/net-policy > should have correct table data 1`] = `
+{
+  "gain": {
+    "etf": "203.786",
+    "policy": "270.937",
+  },
+  "gross": {
+    "etf": "141.650",
+    "policy": "115.148",
+  },
+  "grossWorth": {
+    "etf": "385.401",
+    "policy": "375.937",
+  },
+  "netWorth": {
+    "etf": "348.041",
+    "policy": "335.635",
+  },
+  "tax": {
+    "etf": "37.360",
+    "policy": "40.302",
+  },
+  "totalPayments": {
+    "etf": "105.299",
+    "policy": "105.000",
+  },
+}
+`;
