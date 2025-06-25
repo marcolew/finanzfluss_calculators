@@ -10,7 +10,7 @@ A selection of financial calculators used on the Finanzfluss Website: [https://w
 
 🏛️ **German tax system support**: Correct tax and insurance calculation
 
-<br/>
+<br />
 
 ## Installation
 
@@ -25,10 +25,9 @@ npm install -D @finanzfluss/calculators
 yarn add -D @finanzfluss/calculators
 ```
 
-<br/>
+<br />
 
 ## Calculators
-
 
 ### Gross-to-Net Calculator
 
@@ -80,7 +79,7 @@ console.log(result.outputResNetWageMonth) // Net monthly salary
 console.log(result.outputResNetWageYear) // Net yearly salary
 ```
 
-<br/>
+<br />
 
 ### Net Policy Calculator
 
@@ -130,7 +129,7 @@ const result = calcNetPolicy(validatedInput)
 console.log(result.tableData.netWorth) // Projected net worth over time
 ```
 
-<br/>
+<br />
 
 ## Testing
 
@@ -146,7 +145,7 @@ Run type checking:
 pnpm test:types
 ```
 
-<br/>
+<br />
 
 ## License
 
