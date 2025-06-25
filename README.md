@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="./.github/hippocalc-icon.svg" alt="Finanzfluss Hippocalc Repository" width="120" height="120">
+  <img src="./.github/calculators-icon.svg" alt="Logo for @finanzfluss/calculators Repository" width="120" height="120">
 </p>
 
 <h1 align="center">
-@finanzfluss/hippocalc
+@finanzfluss/calculators
 </h1>
 <p align="center">
 Financial calculators for the Finanzfluss API.
@@ -34,13 +34,13 @@ These calculators are actively used on the Finanzfluss website:
 
 ```bash
 # pnpm
-pnpm add -D @finanzfluss/hippocalc
+pnpm add -D @finanzfluss/calculators
 
 # npm
-npm install -D @finanzfluss/hippocalc
+npm install -D @finanzfluss/calculators
 
 # yarn
-yarn add -D @finanzfluss/hippocalc
+yarn add -D @finanzfluss/calculators
 ```
 
 ## Usage
@@ -62,7 +62,7 @@ The Brutto-Netto-Rechner calculates your net salary from gross income, accountin
 - **Comprehensive social insurance** including pension, unemployment, and care insurance calculations
 
 ```ts
-import { calcGrossToNet, GROSS_NET_QUERY_SCHEMA } from '@finanzfluss/hippocalc'
+import { calcGrossToNet, GROSS_NET_QUERY_SCHEMA } from '@finanzfluss/calculators'
 
 const input = {
   inputAccountingYear: '2025',
@@ -109,7 +109,7 @@ The Rentenversicherung-Rechner compares ETF-based pension insurance policies (Ne
 - **Real-world cost modeling** using actual insurance product data and fee structures
 
 ```ts
-import { calcNetPolicy, NET_POLICY_QUERY_SCHEMA } from '@finanzfluss/hippocalc'
+import { calcNetPolicy, NET_POLICY_QUERY_SCHEMA } from '@finanzfluss/calculators'
 
 const input = {
   savingRate: '500',
