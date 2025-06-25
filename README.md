@@ -1,34 +1,16 @@
-<p align="center">
   <img src="./.github/calculators-icon.svg" alt="Logo for @finanzfluss/calculators Repository" width="120" height="120">
-</p>
 
-<h1 align="center">
-@finanzfluss/calculators
-</h1>
-<p align="center">
-Financial calculators for the Finanzfluss API.
-<p>
+# @finanzfluss/calculators
 
-<br>
+A selection of financial calculators used on the Finanzfluss Website: [https://www.finanzfluss.de/rechner/](https://www.finanzfluss.de/rechner/)
 
-A collection of financial calculators powering the [Finanzfluss.de calculators](https://www.finanzfluss.de/rechner/), including comprehensive salary calculations and insurance comparison tools. All exported functions are used for our `api.finanzfluss.de` API.
+🎯 **Type-safe**: built with TypeScript and Zod validation
 
-## Live Calculators
+🔍 **Real-world tested**: used by millions of Finanzfluss users
 
-These calculators are actively used on the Finanzfluss website:
+🏛️ **German tax system support**: Correct tax and insurance calculation
 
-- 🧮 **[Brutto-Netto-Rechner](https://www.finanzfluss.de/rechner/brutto-netto-rechner/)** - Salary calculator
-- 📊 **[Rentenversicherung-Rechner](https://www.finanzfluss.de/rechner/rentenversicherung/)** - ETF pension insurance vs. ETF savings plan comparison
-
-## Features
-
-- 🧮 **Gross-to-Net Calculator**: Calculate net salary from gross income with complete German tax and social insurance system support
-- 📊 **Net Policy Calculator**: Compare ETF-based pension insurance policies (Nettopolice) with traditional ETF savings plans
-- 🏛️ **German Tax System**: Full support for all 6 tax classes and state-specific regulations including church tax variations
-- 💰 **Social Insurance**: Comprehensive calculations for health, care, pension, and unemployment insurance
-- 📅 **Multi-Year Support**: Accurate tax calculations for years 2019-2025 with updated rates and thresholds
-- 🎯 **Type-Safe**: Built with TypeScript and Zod validation for reliable calculations
-- 🔍 **Real-World Tested**: Powers live calculators used by thousands of users monthly
+<br/>
 
 ## Installation
 
@@ -43,14 +25,14 @@ npm install -D @finanzfluss/calculators
 yarn add -D @finanzfluss/calculators
 ```
 
-## Usage
+<br/>
 
-> [!NOTE]
-> All of our calculation functions are used for our `api.finanzfluss.de` GET requests and thus expect a valid query object as input. That's why all values have to be a string, even if they are numbers.
+## Calculators
+
 
 ### Gross-to-Net Calculator
 
-The Brutto-Netto-Rechner calculates your net salary from gross income, accounting for all German tax and social insurance deductions. This calculator powers the comprehensive salary tool used by thousands of users on [finanzfluss.de/rechner/brutto-netto-rechner](https://www.finanzfluss.de/rechner/brutto-netto-rechner/).
+The Brutto-Netto-Rechner ([https://finanzfluss.de/rechner/brutto-netto-rechner](https://www.finanzfluss.de/rechner/brutto-netto-rechner/)) calculates a net salary from gross income, accounting for all German tax and social insurance deductions. It is based on the official pseudo code for tax calculation provided by the German ministry of finance: [https://www.bmf-steuerrechner.de/interface/pseudocodes.xhtml](https://www.bmf-steuerrechner.de/interface/pseudocodes.xhtml).
 
 #### Key Features:
 
@@ -98,9 +80,11 @@ console.log(result.outputResNetWageMonth) // Net monthly salary
 console.log(result.outputResNetWageYear) // Net yearly salary
 ```
 
+<br/>
+
 ### Net Policy Calculator
 
-The Rentenversicherung-Rechner compares ETF-based pension insurance policies (Nettopolice) with traditional ETF savings plans for retirement planning. This calculator is available at [finanzfluss.de/rechner/rentenversicherung](https://www.finanzfluss.de/rechner/rentenversicherung/).
+The Rentenversicherung-Rechner ([https://finanzfluss.de/rechner/rentenversicherung](https://www.finanzfluss.de/rechner/rentenversicherung/)) compares ETF-based pension insurance policies (Nettopolice) with traditional ETF savings plans for retirement planning.
 
 #### Key Features:
 
@@ -146,6 +130,8 @@ const result = calcNetPolicy(validatedInput)
 console.log(result.tableData.netWorth) // Projected net worth over time
 ```
 
+<br/>
+
 ## Testing
 
 Run the test suite:
@@ -160,6 +146,8 @@ Run type checking:
 pnpm test:types
 ```
 
+<br/>
+
 ## License
 
-[AGPL-3.0](./LICENSE) License © 2025-PRESENT [Finflow GmbH](https://github.com/finanzfluss)
+[AGPL-3.0](./LICENSE) License © 2025-PRESENT [Finflow GmbH](https://www.finanzfluss.de/impressum/)
