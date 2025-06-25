@@ -1,7 +1,7 @@
 {
   "name": "@finanzfluss/hippocalc",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "packageManager": "pnpm@10.12.3",
   "description": "Financial calculators for the Finanzfluss API",
   "author": "Finflow GmbH",
