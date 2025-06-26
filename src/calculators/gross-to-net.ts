@@ -4,11 +4,7 @@ import {
   CARE_INSURANCE_CONTRIBUTION_RATES_SAXONY,
 } from '../constants/gross-to-net'
 import { PENSION_VALUES } from '../constants/pension'
-import {
-  formatPercent,
-  formatResultWithTwoOptionalDecimals,
-  validate,
-} from '../utils'
+import { formatPercent, formatResultWithTwoOptionalDecimals } from '../utils'
 import { INCOME_TAX_CLASSES } from '../utils/Lohnsteuer'
 import { BigDecimal } from '../utils/Lohnsteuer/shims/BigDecimal'
 
@@ -32,7 +28,10 @@ export const GROSS_NET_QUERY_SCHEMA = z.object({
   inputActivateLevy: z.coerce.number(),
   inputHealthInsurance: z.coerce.number(), // PKV
   inputAdditionalContribution: z.coerce.number(), // KVZ
-  inputGrossWage: z.coerce.number(), // RE4
+  inputGrossWage: z.coerce
+    .number()
+    .min(-(10 ** 9))
+    .max(10 ** 9), // RE4
   inputPeriod: z.coerce.number(), // LZZ
 })
 
@@ -58,8 +57,6 @@ export function calcGrossToNet({
   inputGrossWage,
   inputPeriod,
 }: GrossNetQuery) {
-  validate.number(inputGrossWage).between(-(10 ** 9), 10 ** 9)
-
   const { PENSION_LIMIT_WEST, PENSION_LIMIT_EAST } = PENSION_VALUES
 
   const ZERO = new BigDecimal(0)
