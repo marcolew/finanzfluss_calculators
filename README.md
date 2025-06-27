@@ -46,22 +46,22 @@ The Zinseszinsrechner ([https://finanzfluss.de/rechner/zinseszinsrechner](https:
 ```ts
 import {
   calcCompoundInterest,
-  COMPOUND_INTEREST_QUERY_SCHEMA,
+  COMPOUND_INTEREST_SCHEMA,
 } from '@finanzfluss/calculators'
 
 const input = {
-  startCapital: '5000',
-  monthlyPayment: '100',
-  durationYears: '10',
-  yearlyInterest: '7',
+  startCapital: 5000,
+  monthlyPayment: 100,
+  durationYears: 10,
+  yearlyInterest: 7,
   type: 'monthly', // 'monthly', 'quarterly', or 'yearly'
 }
 
 // Validate input
-const validatedInput = COMPOUND_INTEREST_QUERY_SCHEMA.parse(input)
+const parsedInput = COMPOUND_INTEREST_SCHEMA.parse(input)
 
 // Calculate compound interest
-const result = calcCompoundInterest(validatedInput)
+const result = calcCompoundInterest(parsedInput)
 
 console.log(result.finalCapital) // Total capital after compound growth
 console.log(result.totalPayments) // Sum of all payments made
@@ -85,37 +85,34 @@ The Brutto-Netto-Rechner ([https://finanzfluss.de/rechner/brutto-netto-rechner](
 - **Comprehensive social insurance** including pension, unemployment, and care insurance calculations
 
 ```ts
-import {
-  calcGrossToNet,
-  GROSS_NET_QUERY_SCHEMA,
-} from '@finanzfluss/calculators'
+import { calcGrossToNet, GROSS_NET_SCHEMA } from '@finanzfluss/calculators'
 
 const input = {
   inputAccountingYear: '2025',
-  inputTaxClass: '1',
-  inputTaxAllowance: '0',
-  inputChurchTax: '0',
+  inputTaxClass: 1,
+  inputTaxAllowance: 0,
+  inputChurchTax: 0,
   inputState: 'Hamburg',
-  inputYearOfBirth: '1990',
-  inputChildren: '0',
-  inputChildTaxAllowance: '0',
-  inputPkvContribution: '0',
-  inputEmployerSubsidy: '0',
-  inputPensionInsurance: '0',
-  inputLevyOne: '0',
-  inputLevyTwo: '0',
-  inputActivateLevy: '0',
-  inputHealthInsurance: '0',
-  inputAdditionalContribution: '1.7',
-  inputGrossWage: '5000',
-  inputPeriod: '2', // 2 = monthly, 1 = yearly
+  inputYearOfBirth: 1990,
+  inputChildren: 0,
+  inputChildTaxAllowance: 0,
+  inputPkvContribution: 0,
+  inputEmployerSubsidy: 0,
+  inputPensionInsurance: 0,
+  inputLevyOne: 0,
+  inputLevyTwo: 0,
+  inputActivateLevy: 0,
+  inputHealthInsurance: 0,
+  inputAdditionalContribution: 1.7,
+  inputGrossWage: 5000,
+  inputPeriod: 2, // 2 = monthly, 1 = yearly
 }
 
 // Validate input
-const validatedInput = GROSS_NET_QUERY_SCHEMA.parse(input)
+const parsedInput = GROSS_NET_SCHEMA.parse(input)
 
 // Calculate net salary
-const result = calcGrossToNet(validatedInput)
+const result = calcGrossToNet(parsedInput)
 
 console.log(result.outputResNetWageMonth) // Net monthly salary
 console.log(result.outputResNetWageYear) // Net yearly salary
@@ -137,36 +134,32 @@ The Rentenversicherung-Rechner ([https://finanzfluss.de/rechner/rentenversicheru
 - **Real-world cost modeling** using actual insurance product data and fee structures
 
 ```ts
-import {
-  calcNetPolicy,
-  NET_POLICY_QUERY_SCHEMA,
-} from '@finanzfluss/calculators'
+import { calcNetPolicy, NET_POLICY_SCHEMA } from '@finanzfluss/calculators'
 
 const input = {
-  savingRate: '500',
-  duration: '30', // years
-  taxAllowance: '1000',
-  useGrossToNet: 'false',
-  additionalIncome: '0',
-  personalTaxRate: '25',
-  capitalGainsTax: '26.375',
-  placementCommission: '0',
-  savingRateCosts: '2.5',
-  balanceCosts: '1.5',
-  fixedCosts: '10',
-  minimumCosts: '15',
-  ter: '0.2',
-  expectedInterest: '7',
-  reallocationOccurrence: '0',
-  partialExemption: '30',
-  reallocationRate: '0',
+  savingRate: 500,
+  duration: 30, // years
+  taxAllowance: 1000,
+  additionalIncome: 0,
+  personalTaxRate: 25,
+  capitalGainsTax: 26.375,
+  placementCommission: 0,
+  savingRateCosts: 2.5,
+  balanceCosts: 1.5,
+  fixedCosts: 10,
+  minimumCosts: 15,
+  ter: 0.2,
+  expectedInterest: 7,
+  reallocationOccurrence: 0,
+  partialExemption: 30,
+  reallocationRate: 0,
 }
 
 // Validate input
-const validatedInput = NET_POLICY_QUERY_SCHEMA.parse(input)
+const parsedInput = NET_POLICY_SCHEMA.parse(input)
 
 // Calculate net policy
-const result = calcNetPolicy(validatedInput)
+const result = calcNetPolicy(parsedInput)
 
 console.log(result.tableData.netWorth) // Projected net worth over time
 ```

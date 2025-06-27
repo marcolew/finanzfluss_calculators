@@ -11,43 +11,43 @@ import { calcGrossToNet } from './gross-to-net'
 const MAX_EURO = 10_000
 const MAX_PERCENT = 100
 
-export const NET_POLICY_QUERY_SCHEMA = z.object({
+export const NET_POLICY_SCHEMA = z.object({
   // General inputs
-  savingRate: z.coerce.number().nonnegative().max(MAX_EURO),
-  duration: z.coerce
+  savingRate: z.number().nonnegative().max(MAX_EURO),
+  duration: z
     .number()
     .positive()
     .int()
     .max(100)
     .transform((years) => years * 12),
-  taxAllowance: z.coerce.number().nonnegative().max(MAX_EURO),
-  additionalIncome: z.coerce
+  taxAllowance: z.number().nonnegative().max(MAX_EURO),
+  additionalIncome: z
     .number()
     .nonnegative()
     .max(MAX_EURO * 100),
-  personalTaxRate: z.coerce
+  personalTaxRate: z
     .number()
     .nonnegative()
     .max(MAX_PERCENT)
     .optional()
     .default(0)
     .transform(toPercentRate),
-  capitalGainsTax: z.coerce
+  capitalGainsTax: z
     .number()
     .nonnegative()
     .max(MAX_PERCENT)
     .transform(toPercentRate),
 
   // Policy inputs
-  placementCommission: z.coerce.number().nonnegative().max(MAX_EURO),
-  savingRateCosts: z.coerce
+  placementCommission: z.number().nonnegative().max(MAX_EURO),
+  savingRateCosts: z
     .number()
     .nonnegative()
     .max(MAX_PERCENT)
     .optional()
     .default(0)
     .transform(toPercentRate),
-  balanceCosts: z.coerce
+  balanceCosts: z
     .number()
     .nonnegative()
     .max(MAX_PERCENT)
@@ -55,14 +55,14 @@ export const NET_POLICY_QUERY_SCHEMA = z.object({
     .default(0)
     .transform(toPercentRate)
     .transform(toMonthly),
-  fixedCosts: z.coerce
+  fixedCosts: z
     .number()
     .nonnegative()
     .max(MAX_EURO)
     .optional()
     .default(0)
     .transform(toMonthly),
-  minimumCosts: z.coerce
+  minimumCosts: z
     .number()
     .nonnegative()
     .max(MAX_EURO)
@@ -71,18 +71,18 @@ export const NET_POLICY_QUERY_SCHEMA = z.object({
     .transform(toMonthly),
 
   // ETF inputs
-  ter: z.coerce
+  ter: z
     .number()
     .nonnegative()
     .max(MAX_PERCENT)
     .transform(toPercentRate)
     .transform(toMonthly),
-  expectedInterest: z.coerce
+  expectedInterest: z
     .number()
     .nonnegative()
     .max(MAX_PERCENT)
     .transform(toMonthlyConformalRate),
-  partialExemption: z.coerce
+  partialExemption: z
     .number()
     .nonnegative()
     .max(MAX_PERCENT)
@@ -90,14 +90,14 @@ export const NET_POLICY_QUERY_SCHEMA = z.object({
     .transform((rate) => 1 - rate),
 
   // Reallocation inputs
-  reallocationOccurrence: z.coerce
+  reallocationOccurrence: z
     .number()
     .int()
     .max(100)
     .optional()
     .default(0)
     .transform((years) => years * 12),
-  reallocationRate: z.coerce
+  reallocationRate: z
     .number()
     .nonnegative()
     .max(MAX_PERCENT)
@@ -106,17 +106,17 @@ export const NET_POLICY_QUERY_SCHEMA = z.object({
     .transform(toPercentRate),
 })
 
-type NetPolicyQuery = z.output<typeof NET_POLICY_QUERY_SCHEMA>
+type NetPolicyInput = z.output<typeof NET_POLICY_SCHEMA>
 
-export function calcNetPolicy(parsedQuery: NetPolicyQuery) {
-  const { policyBalance, etfBalance, etfGain } = simulateOverPeriod(parsedQuery)
+export function calcNetPolicy(parsedInput: NetPolicyInput) {
+  const { policyBalance, etfBalance, etfGain } = simulateOverPeriod(parsedInput)
 
   return {
-    tableData: calcTableData(policyBalance, etfBalance, etfGain, parsedQuery),
+    tableData: calcTableData(policyBalance, etfBalance, etfGain, parsedInput),
   }
 }
 
-function simulateOverPeriod(parsedQuery: NetPolicyQuery) {
+function simulateOverPeriod(parsedInput: NetPolicyInput) {
   const {
     duration,
     savingRate,
@@ -132,7 +132,7 @@ function simulateOverPeriod(parsedQuery: NetPolicyQuery) {
     taxAllowance,
     capitalGainsTax,
     partialExemption,
-  } = parsedQuery
+  } = parsedInput
 
   let policyBalance = 0
   let etfBalance = 0
@@ -174,7 +174,7 @@ function calcTableData(
   policyGrossWorth: number,
   etfGrossWorth: number,
   etfGain: number,
-  parsedQuery: NetPolicyQuery,
+  parsedInput: NetPolicyInput,
 ) {
   const {
     duration,
@@ -184,7 +184,7 @@ function calcTableData(
     capitalGainsTax,
     partialExemption,
     additionalIncome,
-  } = parsedQuery
+  } = parsedInput
 
   const etfGross = Math.max(0, etfGain * partialExemption - taxAllowance)
   const policyGain = policyGrossWorth - savingRate * duration
@@ -225,7 +225,7 @@ function calcTableData(
 }
 
 function calcPolicyTax(policyGross: number, additionalIncome: number) {
-  const sharedQuery = {
+  const sharedInput = {
     inputPeriod: 1,
     inputAccountingYear: 2025,
     inputTaxClass: 1,
@@ -249,12 +249,12 @@ function calcPolicyTax(policyGross: number, additionalIncome: number) {
     CORRECTION_VALUES.arbeitslosenversicherung *
       Math.min(policyGross, CORRECTION_VALUES.beitragsbemessungsgrenze)
   const taxesWithPolicy = calcGrossToNet({
-    ...sharedQuery,
+    ...sharedInput,
     inputGrossWage: policyGross + correction + additionalIncome,
   }).outputTotalTaxesYear.replace('€', '')
 
   const taxesWithoutPolicy = calcGrossToNet({
-    ...sharedQuery,
+    ...sharedInput,
     inputGrossWage: additionalIncome + correction,
   }).outputTotalTaxesYear.replace('€', '')
 
