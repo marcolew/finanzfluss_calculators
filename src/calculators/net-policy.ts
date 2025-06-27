@@ -5,7 +5,7 @@ import {
   toMonthly,
   toMonthlyConformalRate,
   toPercentRate,
-} from '../utils/validator'
+} from '../utils/validation'
 import { calcGrossToNet } from './gross-to-net'
 
 const MAX_EURO = 10_000
