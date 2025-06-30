@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import { formatResult, toPercentRate } from '../utils'
+import { defineCalculator } from '../utils/calculator'
 
-export const COMPOUND_INTEREST_SCHEMA = z.object({
+const schema = z.object({
   startCapital: z.number(),
   monthlyPayment: z.number(),
   durationYears: z.number().nonnegative().max(1000),
@@ -9,9 +10,14 @@ export const COMPOUND_INTEREST_SCHEMA = z.object({
   type: z.enum(['monthly', 'quarterly', 'yearly']),
 })
 
-type CompoundInterestInput = z.output<typeof COMPOUND_INTEREST_SCHEMA>
+type CalculatorInput = z.output<typeof schema>
 
-export function calcCompoundInterest(parsedInput: CompoundInterestInput) {
+export const compoundInterest = defineCalculator({
+  schema,
+  calculate,
+})
+
+function calculate(parsedInput: CalculatorInput) {
   const { startCapital, monthlyPayment, type, durationYears, yearlyInterest } =
     parsedInput
   const totalPayments = startCapital + durationYears * 12 * monthlyPayment
