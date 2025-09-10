@@ -1,8 +1,11 @@
 import type { z } from 'zod'
 
-export function defineCalculator<Schema extends z.ZodObject, Output>(config: {
-  schema: Schema
-  calculate: (input: z.output<Schema>) => Output
+export function defineCalculator<
+  Schema extends z.core.$ZodShape,
+  Output,
+>(config: {
+  schema: z.ZodObject<Schema>
+  calculate: (input: z.output<z.ZodObject<Schema>>) => Output
 }) {
   return {
     ...config,
