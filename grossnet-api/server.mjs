@@ -267,7 +267,6 @@ const swaggerDefinition = {
 const swaggerSpec = swaggerJSDoc({ definition: swaggerDefinition, apis: [] })
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
-// ---- Routes ----
 app.post('/gross-to-net', (req, res) => {
   try {
     // Let the library validate and compute
@@ -312,70 +311,179 @@ function getNetFromResult(result, period /* 1=year, 2=month */) {
   return n
 }
 
-// Newton-Raphson to solve f(gross) = net(gross) - target = 0
+// Safeguarded Newton to solve f(gross) = net(gross) - target = 0
+// Gibt immer ein Ergebnis zurück. Bei Nicht-Konvergenz: status = "best_effort".
 async function solveGrossForNet({
-  baseInput, // all fields except inputGrossWage
-  targetNet, // numeric net target
-  period, // 1=year, 2=month (must match baseInput.inputPeriod)
-  x0, // initial guess for gross
+  baseInput,
+  targetNet,
+  period, // 1=year, 2=month (muss zu baseInput.inputPeriod passen)
+  x0, // initial guess
   maxIter = 900,
-  tol = 0.01, // € tolerance
+  tol = 0.01, // €-Toleranz
   bounds = [0, 1_000_000],
 }) {
-  // clamp helper
   const clamp = (x, [lo, hi]) => Math.max(lo, Math.min(hi, x))
 
-  // function f(x) = net(x) - target
+  // robuste f(x) mit Try/Catch
   const f = (x) => {
-    const input = { ...baseInput, inputGrossWage: x }
-    const r = grossToNet.validateAndCalculate(input)
-    return getNetFromResult(r, period) - targetNet
+    try {
+      const input = { ...baseInput, inputGrossWage: x }
+      const r = grossToNet.validateAndCalculate(input)
+      return getNetFromResult(r, period) - targetNet
+    } catch {
+      // „schlechter“ Wert, zwingt den Solver zum Wegbewegen
+      return Number.NaN
+    }
   }
 
-  // pick a sensible default initial guess if not provided
-  let x = x0 ?? clamp(targetNet / 0.75, bounds) // heuristics: ~25% deductions
+  // Hilfsfunktion: sichere Auswertung + NaN-Handling
+  const fSafe = (x) => {
+    const y = f(x)
+    if (!Number.isFinite(y)) return { ok: false, fx: Number.NaN }
+    return { ok: true, fx: y }
+  }
 
-  // small step for numerical derivative
+  // Startwert (Heuristik: ~25% Abzüge)
+  let x = x0 ?? clamp(targetNet / 0.75, bounds)
+
+  // Track bestes Ergebnis
+  let best = { x, fx: Number.POSITIVE_INFINITY, iter: 0 }
+
+  // Optional: Bracket versuchen (nützlich für Bisektion)
+  let [lo, hi] = bounds
+  let flo = f(lo)
+  let fhi = f(hi)
+  let haveBracket =
+    Number.isFinite(flo) &&
+    Number.isFinite(fhi) &&
+    Math.sign(flo) !== Math.sign(fhi)
+
+  // Hauptschleife: Safeguarded Newton + fallback
   for (let i = 0; i < maxIter; i++) {
-    const fx = f(x)
-    if (Math.abs(fx) <= tol) {
-      const result = grossToNet.validateAndCalculate({
-        ...baseInput,
-        inputGrossWage: x,
-      })
-      return { gross: x, result, iterations: i, residual: fx }
+    // 1) Prüfe aktuelle Güte
+    const { ok, fx } = fSafe(x)
+    if (ok) {
+      const absFx = Math.abs(fx)
+      if (absFx < Math.abs(best.fx)) best = { x, fx, iter: i }
+
+      if (absFx <= tol) {
+        const result = grossToNet.validateAndCalculate({
+          ...baseInput,
+          inputGrossWage: x,
+        })
+        return {
+          gross: x,
+          result,
+          iterations: i,
+          residual: fx,
+          status: 'converged',
+          method: 'newton',
+        }
+      }
+
+      // 2) Versuche Schachtelung upzudaten (für Bisektion)
+      if (haveBracket) {
+        if (fx > 0) {
+          hi = x
+          fhi = fx
+        } else {
+          lo = x
+          flo = fx
+        }
+        haveBracket = Math.sign(flo) !== Math.sign(fhi)
+      } else {
+        // wenn noch kein Bracket: versuche eins zu finden, indem wir die Bounds leicht ausnutzen
+        if (
+          Number.isFinite(flo) &&
+          Number.isFinite(fx) &&
+          Math.sign(flo) !== Math.sign(fx)
+        ) {
+          hi = x
+          fhi = fx
+          haveBracket = true
+        } else if (
+          Number.isFinite(fhi) &&
+          Number.isFinite(fx) &&
+          Math.sign(fhi) !== Math.sign(fx)
+        ) {
+          lo = x
+          flo = fx
+          haveBracket = true
+        }
+      }
     }
 
-    // central difference slope
-    const h = Math.max(1, Math.abs(x) * 0.001)
-    const fph = f(x + h)
-    const fmh = f(x - h)
-    const dfx = (fph - fmh) / (2 * h)
+    // 3) Newton-Schritt (zentrale Differenz), wenn möglich
+    let tookStep = false
+    if (ok) {
+      const h = Math.max(1, Math.abs(x) * 0.001)
+      const fph = f(x + h)
+      const fmh = f(x - h)
+      const dfx = (fph - fmh) / (2 * h)
 
-    // if derivative is tiny or NaN, nudge x
-    if (!Number.isFinite(dfx) || Math.abs(dfx) < 1e-9) {
-      x = clamp(x + Math.sign(fx) * 100, bounds)
-      continue
+      if (Number.isFinite(dfx) && Math.abs(dfx) >= 1e-9) {
+        let xNext = x - fx / dfx
+
+        // in Bounds halten; bei Bounce dämpfen
+        if (xNext < bounds[0] || xNext > bounds[1]) {
+          xNext = clamp((x + clamp(xNext, bounds)) / 2, bounds)
+        }
+
+        // Mikroschritt? leicht vergrößern
+        if (Math.abs(xNext - x) < 1e-6) {
+          xNext = clamp(x + (fx > 0 ? -10 : 10), bounds)
+        }
+
+        // Wenn Bracket existiert und Newton rausspringt, nutze Sekante innerhalb [lo, hi]
+        if (haveBracket && (xNext <= lo || xNext >= hi)) {
+          // Sekante innerhalb des Brackets
+          const denom = fhi - flo
+          if (Number.isFinite(denom) && Math.abs(denom) > 0) {
+            xNext = clamp(hi - (fhi * (hi - lo)) / denom, [lo, hi])
+          } else {
+            xNext = (lo + hi) / 2 // fallback Bisektion
+          }
+        }
+
+        x = xNext
+        tookStep = true
+      }
     }
 
-    // Newton step
-    let xNext = x - fx / dfx
-
-    // keep inside bounds; if bounce occurs, dampen
-    if (xNext < bounds[0] || xNext > bounds[1]) {
-      xNext = clamp((x + clamp(xNext, bounds)) / 2, bounds)
+    // 4) Wenn Newton nicht möglich war: Hybrid-Fallback
+    if (!tookStep) {
+      if (haveBracket) {
+        // Bevorzuge Sekante; wenn degeneriert, Bisection
+        const denom = fhi - flo
+        let xNext
+        if (Number.isFinite(denom) && Math.abs(denom) > 0) {
+          xNext = clamp(hi - (fhi * (hi - lo)) / denom, [lo, hi])
+        } else {
+          xNext = (lo + hi) / 2
+        }
+        x = xNext
+      } else {
+        // Kein Bracket: vorsichtig nudgen in Richtung abnehmender |f|
+        const step = Number.isFinite(best.fx) && best.fx > 0 ? -100 : 100
+        x = clamp(x + step, bounds)
+      }
     }
-
-    // if step is too tiny but not converged, enlarge slightly
-    if (Math.abs(xNext - x) < 1e-6) {
-      xNext = x + (fx > 0 ? -10 : 10)
-    }
-
-    x = xNext
   }
 
-  // if we reach here, did not converge within maxIter
-  throw new Error('Newton solver did not converge to desired tolerance.')
+  // Nicht konvergiert: best effort zurückgeben
+  const result = grossToNet.validateAndCalculate({
+    ...baseInput,
+    inputGrossWage: best.x,
+  })
+  return {
+    gross: best.x,
+    result,
+    iterations: maxIter,
+    residual: best.fx,
+    status: 'best_effort',
+    method: 'hybrid',
+    note: 'Maximale Iterationen erreicht; bestes gefundenes Ergebnis zurückgegeben.',
+  }
 }
 
 // --------- ROUTE: NET -> GROSS -----------
