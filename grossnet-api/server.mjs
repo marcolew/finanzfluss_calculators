@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { grossToNet } from '@finanzfluss/calculators'
 import cors from 'cors'
 import express from 'express'
@@ -194,6 +195,34 @@ const swaggerDefinition = {
         },
         additionalProperties: true,
       },
+
+      BenefitsInput: {
+        type: 'object',
+        properties: {
+          inputBikeleasing: { type: 'number', example: 0 },
+          inputGasolineCard: { type: 'number', example: 0 },
+          inputECarLoadingCard: { type: 'number', example: 0 },
+          inputCarsharingCard: { type: 'number', example: 0 },
+          inputDeutschlandticket: { type: 'number', example: 0 },
+          inputCarsharingSupplement: { type: 'number', example: 0 },
+          inputindivisualMobility: { type: 'number', example: 0 },
+          inputFoodBenefit: { type: 'number', example: 0 },
+          inputTelephone: { type: 'number', example: 0 },
+          inputInternet: { type: 'number', example: 0 },
+          inputRecovery: { type: 'number', example: 0 },
+        },
+        additionalProperties: false,
+      },
+
+      BenefitsResult: {
+        type: 'object',
+        properties: {
+          outputNetValue: { type: 'number', example: 0 },
+          outputEmployerCosts: { type: 'number', example: 0 },
+          outputEmployerTax: { type: 'number', example: 0 },
+        },
+        additionalProperties: false,
+      },
     },
   },
   paths: {
@@ -252,6 +281,40 @@ const swaggerDefinition = {
           },
           400: {
             description: 'Validierungsfehler oder keine Konvergenz',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    '/benefits': {
+      post: {
+        summary: 'Calculate benefits aggregation',
+        description:
+          'Accepts benefit inputs (net values). Rules: (1) If sum of all benefits (excluding Deutschlandticket and any category exactly 50€ except telephone, internet, recovery) ≤ 50€, employer tax = 0. (2) If that sum > 50€, the full remaining amounts are taxable. (3) Deutschlandticket is tax-free. (4) Any single category that is exactly 50€ is tax-free, except telephone, internet, and recovery. (5) Employer tax rates: 30% for bikeleasing, gasoline/e-car loading card, carsharing card/supplement, individual mobility; 25% for food, telephone, internet, recovery.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/BenefitsInput' },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Aggregated benefits result',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/BenefitsResult' },
+              },
+            },
+          },
+          400: {
+            description: 'Validation / input error',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
@@ -579,11 +642,101 @@ app.post('/net-to-gross', async (req, res) => {
   }
 })
 
+// --------- ROUTE: BENEFITS AGGREGATION -----------
+app.post('/benefits', (req, res) => {
+  try {
+    const {
+      inputBikeleasing,
+      inputGasolineCard,
+      inputECarLoadingCard,
+      inputCarsharingCard,
+      inputDeutschlandticket,
+      inputCarsharingSupplement,
+      inputindivisualMobility,
+      inputFoodBenefit,
+      inputTelephone,
+      inputInternet,
+      inputRecovery,
+    } = req.body || {}
+
+    const parsed = {
+      bikeleasing: parseEuroMaybe(inputBikeleasing) || 0,
+      gasolineCard: parseEuroMaybe(inputGasolineCard) || 0,
+      eCarLoadingCard: parseEuroMaybe(inputECarLoadingCard) || 0,
+      carsharingCard: parseEuroMaybe(inputCarsharingCard) || 0,
+      deutschlandticket: parseEuroMaybe(inputDeutschlandticket) || 0,
+      carsharingSupplement: parseEuroMaybe(inputCarsharingSupplement) || 0,
+      indivisualMobility: parseEuroMaybe(inputindivisualMobility) || 0,
+      foodBenefit: parseEuroMaybe(inputFoodBenefit) || 0,
+      telephone: parseEuroMaybe(inputTelephone) || 0,
+      internet: parseEuroMaybe(inputInternet) || 0,
+      recovery: parseEuroMaybe(inputRecovery) || 0,
+    }
+
+    const values = Object.values(parsed)
+    if (values.some((n) => !Number.isFinite(n) || n < 0)) {
+      return res
+        .status(400)
+        .json({ message: 'All inputs must be non-negative numbers.' })
+    }
+
+    const totalNet = values.reduce((a, b) => a + b, 0)
+
+    const isFifty = (n) => Math.abs(n - 50) < 1e-9
+
+    const adjustedForThreshold =
+      parsed.bikeleasing +
+      parsed.gasolineCard +
+      parsed.eCarLoadingCard +
+      parsed.carsharingCard +
+      parsed.carsharingSupplement +
+      parsed.indivisualMobility +
+      (isFifty(parsed.foodBenefit) ? 0 : parsed.foodBenefit) +
+      parsed.telephone +
+      parsed.internet +
+      parsed.recovery
+
+    const thresholdApplies = adjustedForThreshold <= 50
+
+    let employerTax = 0
+    if (!thresholdApplies) {
+      const rate30 =
+        parsed.bikeleasing +
+        parsed.gasolineCard +
+        parsed.eCarLoadingCard +
+        parsed.carsharingCard +
+        parsed.carsharingSupplement +
+        parsed.indivisualMobility
+
+      const base25 =
+        (isFifty(parsed.foodBenefit) ? 0 : parsed.foodBenefit) +
+        parsed.telephone +
+        parsed.internet +
+        parsed.recovery
+
+      const tax30 = rate30 * 0.3
+      const tax25 = base25 * 0.25
+      employerTax = tax30 + tax25
+    }
+
+    const outputEmployerTax =
+      Math.round((employerTax + Number.EPSILON) * 100) / 100
+    const outputNetValue = Math.round((totalNet + Number.EPSILON) * 100) / 100
+    const outputEmployerCosts =
+      Math.round((totalNet + outputEmployerTax + Number.EPSILON) * 100) / 100
+
+    return res.json({ outputNetValue, outputEmployerCosts, outputEmployerTax })
+  } catch (err) {
+    const message = err?.message || 'Failed to calculate benefits.'
+    return res.status(400).json({ message })
+  }
+})
+
 // Basic health check
 app.get('/health', (_req, res) => res.json({ ok: true }))
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
-  console.log(`Gross→Net API listening on http://localhost:${PORT}`)
-  console.log(`Swagger UI: http://localhost:${PORT}/docs`)
+  console.warn(`Gross→Net API listening on http://localhost:${PORT}`)
+  console.warn(`Swagger UI: http://localhost:${PORT}/docs`)
 })
