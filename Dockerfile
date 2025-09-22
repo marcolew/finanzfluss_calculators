@@ -2,11 +2,14 @@ FROM node:20-alpine AS calculators-builder
 
 WORKDIR /build
 
-# Install root deps (including dev) and build calculators dist/
-COPY package*.json ./
+# Enable corepack and pin pnpm
+RUN corepack enable && corepack prepare pnpm@10.15.1 --activate
+
+# Copy lockfile and sources, then build calculators dist/
+COPY package.json pnpm-lock.yaml ./
 COPY tsconfig.json tsdown.config.ts ./
 COPY src ./src
-RUN npm ci --legacy-peer-deps && npm run build
+RUN pnpm install --frozen-lockfile && pnpm run build
 
 
 FROM node:20-alpine
