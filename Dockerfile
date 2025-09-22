@@ -6,7 +6,7 @@ WORKDIR /build
 COPY package*.json ./
 COPY tsconfig.json tsdown.config.ts ./
 COPY src ./src
-RUN npm ci && npm run build
+RUN npm ci --legacy-peer-deps && npm run build
 
 
 FROM node:20-alpine
