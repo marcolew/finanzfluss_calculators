@@ -206,12 +206,6 @@ const swaggerDefinition = {
             description:
               'Period reference for inputs; currently only monthly (2) is supported.',
           },
-          voucherCompliant: {
-            type: 'boolean',
-            example: true,
-            description:
-              'Whether vouchers/cards meet BMF criteria for non-cash benefits. If false, the 50€ threshold will not be applied.',
-          },
           isDeutschlandticketAdditional: {
             type: 'boolean',
             example: true,
@@ -314,7 +308,7 @@ const swaggerDefinition = {
       post: {
         summary: 'Calculate benefits aggregation',
         description:
-          'Accepts benefit inputs (net values) on a monthly basis (inputPeriod=2). Rules: (1) 50€ non-cash threshold applies only if vouchers/cards are BMF-compliant and only to the 30%-rate categories; exactly 50€ in a category is tax-free within that test. (2) If the threshold sum > 50€, the full 30%-group is taxable. (3) Deutschlandticket is tax-free only if provided in addition to salary (isDeutschlandticketAdditional=true), otherwise taxable at the pauschal rate used here. (4) Telephone, internet, recovery, and food are taxed at 25% (not part of the 50€ threshold). (5) Rates: 30% for bikeleasing, gasoline/e-car loading card, carsharing card/supplement, individual mobility; 25% for food, telephone, internet, recovery (and non-additional Deutschlandticket).',
+          'Accepts benefit inputs (net values) monthly (inputPeriod=2). Rules: (1) Select at most one 30%-group category under 50€ as tax-free Sachzulage (use the largest <50€); food, telephone, internet, and recovery are excluded from this selection. (2) If after this selection the remaining 30%-group sum exceeds 50€, the full 30%-group becomes taxable. (3) Deutschlandticket is tax-free only if provided in addition to salary (isDeutschlandticketAdditional=true); otherwise taxed at 25%. (4) Rates: 30% for bikeleasing, gasoline/e-car loading card, carsharing card/supplement, individual mobility; 25% for food, telephone, internet, recovery (and non-additional Deutschlandticket).',
         requestBody: {
           required: true,
           content: {
@@ -666,7 +660,6 @@ app.post('/benefits', (req, res) => {
   try {
     const {
       inputPeriod = 2,
-      voucherCompliant = true,
       isDeutschlandticketAdditional = true,
       inputBikeleasing,
       inputGasolineCard,
@@ -711,9 +704,9 @@ app.post('/benefits', (req, res) => {
 
     const totalNet = values.reduce((a, b) => a + b, 0)
 
-    const isFifty = (n) => Math.abs(n - 50) < 1e-9
+    // exact-50 handling is implied by selecting at most one <50€ as Sachzulage
 
-    // Build 30%-group pool for 50€ threshold (only if vouchers are compliant)
+    // Build 30%-group pool for 50€ logic
     const pool30Raw =
       parsed.bikeleasing +
       parsed.gasolineCard +
@@ -722,23 +715,28 @@ app.post('/benefits', (req, res) => {
       parsed.carsharingSupplement +
       parsed.indivisualMobility
 
-    // Within the threshold test, values exactly 50€ can be excluded
-    const pool30Adjusted =
-      (isFifty(parsed.bikeleasing) ? 0 : parsed.bikeleasing) +
-      (isFifty(parsed.gasolineCard) ? 0 : parsed.gasolineCard) +
-      (isFifty(parsed.eCarLoadingCard) ? 0 : parsed.eCarLoadingCard) +
-      (isFifty(parsed.carsharingCard) ? 0 : parsed.carsharingCard) +
-      (isFifty(parsed.carsharingSupplement) ? 0 : parsed.carsharingSupplement) +
-      (isFifty(parsed.indivisualMobility) ? 0 : parsed.indivisualMobility)
+    // Choose one 30%-group category < 50€ as tax-free Sachzulage (largest)
+    const candidates = [
+      { key: 'bikeleasing', v: parsed.bikeleasing },
+      { key: 'gasolineCard', v: parsed.gasolineCard },
+      { key: 'eCarLoadingCard', v: parsed.eCarLoadingCard },
+      { key: 'carsharingCard', v: parsed.carsharingCard },
+      { key: 'carsharingSupplement', v: parsed.carsharingSupplement },
+      { key: 'indivisualMobility', v: parsed.indivisualMobility },
+    ]
+      .filter((c) => c.v > 0 && c.v < 50)
+      .sort((a, b) => b.v - a.v)
 
-    const adjustedForThreshold = voucherCompliant ? pool30Adjusted : pool30Raw
+    const sachzulage = candidates.length > 0 ? candidates[0].v : 0
 
-    const thresholdApplies = adjustedForThreshold <= 50
+    // After excluding Sachzulage, test remaining 30%-group against 50€
+    const remaining30 = pool30Raw - sachzulage
+    const thresholdApplies = remaining30 <= 50
 
     let employerTax = 0
 
     // 30% bucket
-    const taxable30 = thresholdApplies ? 0 : pool30Raw
+    const taxable30 = thresholdApplies ? 0 : remaining30
     const tax30 = taxable30 * 0.3
 
     // 25% bucket: food, telephone, internet, recovery always outside 50€ test
