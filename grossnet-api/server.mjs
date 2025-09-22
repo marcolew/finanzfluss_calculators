@@ -199,6 +199,25 @@ const swaggerDefinition = {
       BenefitsInput: {
         type: 'object',
         properties: {
+          inputPeriod: {
+            type: 'integer',
+            enum: [2],
+            example: 2,
+            description:
+              'Period reference for inputs; currently only monthly (2) is supported.',
+          },
+          voucherCompliant: {
+            type: 'boolean',
+            example: true,
+            description:
+              'Whether vouchers/cards meet BMF criteria for non-cash benefits. If false, the 50€ threshold will not be applied.',
+          },
+          isDeutschlandticketAdditional: {
+            type: 'boolean',
+            example: true,
+            description:
+              'If true, Deutschlandticket is tax-free (§3 Nr. 15 EStG). If false (salary conversion), it is taxable at the pauschal rate used here.',
+          },
           inputBikeleasing: { type: 'number', example: 0 },
           inputGasolineCard: { type: 'number', example: 0 },
           inputECarLoadingCard: { type: 'number', example: 0 },
@@ -295,7 +314,7 @@ const swaggerDefinition = {
       post: {
         summary: 'Calculate benefits aggregation',
         description:
-          'Accepts benefit inputs (net values). Rules: (1) If sum of all benefits (excluding Deutschlandticket and any category exactly 50€ except telephone, internet, recovery) ≤ 50€, employer tax = 0. (2) If that sum > 50€, the full remaining amounts are taxable. (3) Deutschlandticket is tax-free. (4) Any single category that is exactly 50€ is tax-free, except telephone, internet, and recovery. (5) Employer tax rates: 30% for bikeleasing, gasoline/e-car loading card, carsharing card/supplement, individual mobility; 25% for food, telephone, internet, recovery.',
+          'Accepts benefit inputs (net values) on a monthly basis (inputPeriod=2). Rules: (1) 50€ non-cash threshold applies only if vouchers/cards are BMF-compliant and only to the 30%-rate categories; exactly 50€ in a category is tax-free within that test. (2) If the threshold sum > 50€, the full 30%-group is taxable. (3) Deutschlandticket is tax-free only if provided in addition to salary (isDeutschlandticketAdditional=true), otherwise taxable at the pauschal rate used here. (4) Telephone, internet, recovery, and food are taxed at 25% (not part of the 50€ threshold). (5) Rates: 30% for bikeleasing, gasoline/e-car loading card, carsharing card/supplement, individual mobility; 25% for food, telephone, internet, recovery (and non-additional Deutschlandticket).',
         requestBody: {
           required: true,
           content: {
@@ -646,6 +665,9 @@ app.post('/net-to-gross', async (req, res) => {
 app.post('/benefits', (req, res) => {
   try {
     const {
+      inputPeriod = 2,
+      voucherCompliant = true,
+      isDeutschlandticketAdditional = true,
       inputBikeleasing,
       inputGasolineCard,
       inputECarLoadingCard,
@@ -658,6 +680,13 @@ app.post('/benefits', (req, res) => {
       inputInternet,
       inputRecovery,
     } = req.body || {}
+
+    // Validate period
+    if (inputPeriod !== 2) {
+      return res
+        .status(400)
+        .json({ message: 'Only monthly period (2) is supported.' })
+    }
 
     const parsed = {
       bikeleasing: parseEuroMaybe(inputBikeleasing) || 0,
@@ -684,40 +713,46 @@ app.post('/benefits', (req, res) => {
 
     const isFifty = (n) => Math.abs(n - 50) < 1e-9
 
-    const adjustedForThreshold =
+    // Build 30%-group pool for 50€ threshold (only if vouchers are compliant)
+    const pool30Raw =
       parsed.bikeleasing +
       parsed.gasolineCard +
       parsed.eCarLoadingCard +
       parsed.carsharingCard +
       parsed.carsharingSupplement +
-      parsed.indivisualMobility +
-      (isFifty(parsed.foodBenefit) ? 0 : parsed.foodBenefit) +
-      parsed.telephone +
-      parsed.internet +
-      parsed.recovery
+      parsed.indivisualMobility
+
+    // Within the threshold test, values exactly 50€ can be excluded
+    const pool30Adjusted =
+      (isFifty(parsed.bikeleasing) ? 0 : parsed.bikeleasing) +
+      (isFifty(parsed.gasolineCard) ? 0 : parsed.gasolineCard) +
+      (isFifty(parsed.eCarLoadingCard) ? 0 : parsed.eCarLoadingCard) +
+      (isFifty(parsed.carsharingCard) ? 0 : parsed.carsharingCard) +
+      (isFifty(parsed.carsharingSupplement) ? 0 : parsed.carsharingSupplement) +
+      (isFifty(parsed.indivisualMobility) ? 0 : parsed.indivisualMobility)
+
+    const adjustedForThreshold = voucherCompliant ? pool30Adjusted : pool30Raw
 
     const thresholdApplies = adjustedForThreshold <= 50
 
     let employerTax = 0
-    if (!thresholdApplies) {
-      const rate30 =
-        parsed.bikeleasing +
-        parsed.gasolineCard +
-        parsed.eCarLoadingCard +
-        parsed.carsharingCard +
-        parsed.carsharingSupplement +
-        parsed.indivisualMobility
 
-      const base25 =
-        (isFifty(parsed.foodBenefit) ? 0 : parsed.foodBenefit) +
-        parsed.telephone +
-        parsed.internet +
-        parsed.recovery
+    // 30% bucket
+    const taxable30 = thresholdApplies ? 0 : pool30Raw
+    const tax30 = taxable30 * 0.3
 
-      const tax30 = rate30 * 0.3
-      const tax25 = base25 * 0.25
-      employerTax = tax30 + tax25
+    // 25% bucket: food, telephone, internet, recovery always outside 50€ test
+    const base25 =
+      parsed.foodBenefit + parsed.telephone + parsed.internet + parsed.recovery
+    let tax25 = base25 * 0.25
+
+    // Deutschlandticket
+    if (!isDeutschlandticketAdditional) {
+      // treat non-additional (salary conversion) as taxable at 25%
+      tax25 += parsed.deutschlandticket * 0.25
     }
+
+    employerTax = tax30 + tax25
 
     const outputEmployerTax =
       Math.round((employerTax + Number.EPSILON) * 100) / 100
