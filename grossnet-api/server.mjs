@@ -7,6 +7,8 @@ import swaggerUi from 'swagger-ui-express'
 
 const app = express()
 app.use(cors())
+// Explicitly allow all origins/methods/headers for preflight requests
+app.options('*', cors())
 app.use(express.json())
 
 // ---- OpenAPI (Swagger) ----
