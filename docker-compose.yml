@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  grossnetapi:
+    image: harbor.swms-cloud.com/finanzfluss/grossnetapi:latest
+    container_name: grossnetapi
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/health']
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  default:
+    name: grossnetapi-net
